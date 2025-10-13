@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS variables for easy reuse in inline styles if needed */
+:root {
+  --ef-bg0: #1E2326;
+  --ef-bg1: #272E33;
+  --ef-bg2: #2E383C;
+  --ef-bg3: #374145;
+  --ef-bg4: #414B50;
+  --ef-bg5: #495156;
+  --ef-bg6: #4F5B58;
+  --ef-bg7: #4C3743;
+  --ef-bg8: #493B40;
+  --ef-bg9: #45443c;
+  --ef-bg10: #3C4841;
+  --ef-bg11: #384B55;
+  --ef-bg12: #463F48;
+
+  --ef-fg: #D3C6AA;
+  --ef-red: #E67E80;
+  --ef-orange: #E69875;
+  --ef-yellow: #DBBC7F;
+  --ef-aqua: #83C092;
+  --ef-cyan: #7FBBB3;
+  --ef-purple: #D699B6;
+
+  --ef-g1: #7A8478;
+  --ef-g2: #859289;
+  --ef-g3: #9DA9A0;
+}
+
+/* Smooth fonts on dark bg */
+html, body {
+  color-scheme: dark;
+  background: var(--ef-bg0);
+}
