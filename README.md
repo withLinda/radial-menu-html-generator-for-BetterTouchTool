@@ -8,6 +8,11 @@ Generate a BetterTouchTool **Floating WebView/HTML Menu** radial menu UI, where 
 
 ![Radial menu example](images/radial%20menu%20example.png)
 
+
+https://github.com/user-attachments/assets/d51f607c-3ac9-4913-a13e-6e90b5d2e176
+
+
+
 ## What this generates
 
 - A single HTML document you paste into BetterTouchTool’s **Show Floating WebView/HTML Menu** action.
