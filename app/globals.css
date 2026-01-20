@@ -25,6 +25,7 @@
   --ef-aqua: #83C092;
   --ef-cyan: #7FBBB3;
   --ef-purple: #D699B6;
+  --ef-pink: #D699B6;
 
   --ef-g1: #7A8478;
   --ef-g2: #859289;
@@ -35,4 +36,29 @@
 html, body {
   color-scheme: dark;
   background: var(--ef-bg0);
+}
+
+.scrollbar-ef-orange {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ef-orange) rgba(39, 46, 51, 0.85); /* ef.bg1 */
+}
+
+.scrollbar-ef-orange::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollbar-ef-orange::-webkit-scrollbar-track {
+  background: rgba(39, 46, 51, 0.65); /* ef.bg1 */
+  border-radius: 999px;
+}
+
+.scrollbar-ef-orange::-webkit-scrollbar-thumb {
+  background: var(--ef-orange);
+  border-radius: 999px;
+  border: 2px solid rgba(30, 35, 38, 0.85); /* ef.bg0 */
+}
+
+.scrollbar-ef-orange::-webkit-scrollbar-thumb:hover {
+  background: rgba(230, 152, 117, 0.9); /* ef.orange */
 }

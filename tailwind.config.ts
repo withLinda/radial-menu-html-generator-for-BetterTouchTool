@@ -32,6 +32,7 @@ const config: Config = {
           aqua: "#83C092",
           cyan: "#7FBBB3",
           purple: "#D699B6",
+          pink: "#D699B6",
           // Greys
           g1: "#7A8478",
           g2: "#859289",
