@@ -102,6 +102,47 @@ const RadialMenuGenerator = () => {
     colorType: "preset",
   });
 
+  type MenuItem = ReturnType<typeof createMenuItem>;
+
+  const toNormalizedColor = (color: string | undefined | null) => (color ?? "").trim().toLowerCase();
+
+  const toNormalizedIcon = (item: MenuItem) => {
+    const iconToUse = item.iconType === "custom" ? item.customIcon : item.icon;
+    return normalizeFaClass(iconToUse).trim();
+  };
+
+  const pickRandomUnused = <T,>(
+    pool: readonly T[],
+    usedSet: Set<string>,
+    getKey: (item: T) => string
+  ) => {
+    const unused = pool.filter((item) => !usedSet.has(getKey(item)));
+    return unused.length > 0 ? randomFrom(unused) : null;
+  };
+
+  const generateUniqueHexColor = (usedColors: Set<string>) => {
+    const randomHex = () =>
+      `#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0").toUpperCase()}`;
+
+    for (let attempt = 0; attempt < 256; attempt++) {
+      const candidate = randomHex();
+      if (!usedColors.has(toNormalizedColor(candidate))) {
+        return candidate;
+      }
+    }
+
+    let value = 0;
+    for (let attempt = 0; attempt < 0x1000000; attempt++) {
+      const candidate = `#${value.toString(16).padStart(6, "0").toUpperCase()}`;
+      if (!usedColors.has(toNormalizedColor(candidate))) {
+        return candidate;
+      }
+      value = (value + 104729) % 0x1000000;
+    }
+
+    return "#FFFFFF";
+  };
+
   const [menuItems, setMenuItems] = useState(() => Array.from({ length: 6 }, (_, index) => createMenuItem(index + 1)));
   const [generatedHtml, setGeneratedHtml] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -158,6 +199,49 @@ const RadialMenuGenerator = () => {
         color: colors[index % colors.length],
       }))
     );
+  };
+
+  const randomizeMenuItem = (id: number) => {
+    const targetItem = menuItems.find((item) => item.id === id);
+    if (!targetItem) return;
+
+    const otherItems = menuItems.filter((item) => item.id !== id);
+    const usedIcons = new Set(otherItems.map((item) => toNormalizedIcon(item)));
+    const usedColors = new Set(otherItems.map((item) => toNormalizedColor(item.color)));
+
+    const nextIcon = pickRandomUnused(ICON_OPTIONS, usedIcons, (icon) => normalizeFaClass(icon).trim());
+    const nextPresetColor = pickRandomUnused(
+      presetColors.map((c) => c.hex),
+      usedColors,
+      (color) => toNormalizedColor(color)
+    );
+
+    const nextColor = nextPresetColor ?? generateUniqueHexColor(usedColors);
+
+    setMenuItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+
+        const iconFields = nextIcon
+          ? {
+              iconType: "preset",
+              icon: nextIcon,
+              customIcon: "",
+            }
+          : {};
+
+        return {
+          ...item,
+          ...iconFields,
+          colorType: nextPresetColor ? "preset" : "picker",
+          color: nextColor,
+        };
+      })
+    );
+
+    if (!nextIcon) {
+      showActionStatus("No unused icon is available. Color was randomized.");
+    }
   };
 
   const removeMenuItem = (id: number) => {
@@ -604,15 +688,27 @@ ${menuItemsHtml}
                         <div className="text-sm font-semibold" style={{ color: "#D3C6AA" }}>
                           #{index + 1}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeMenuItem(item.id)}
-                          className="h-9 w-9 rounded-md border transition-all duration-200 shadow-efsoft flex items-center justify-center"
-                          style={{ backgroundColor: "rgba(230,126,128,0.14)", borderColor: "rgba(230,126,128,0.30)", color: "#E67E80" }}
-                          aria-label="Remove menu item"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => randomizeMenuItem(item.id)}
+                            className="h-9 px-3 rounded-md border transition-all duration-200 shadow-efsoft flex items-center gap-1.5"
+                            style={{ backgroundColor: "rgba(127,187,179,0.14)", borderColor: "rgba(127,187,179,0.30)", color: "#D3C6AA" }}
+                            aria-label={`Randomize item #${index + 1}`}
+                          >
+                            <Shuffle size={16} />
+                            <span className="text-xs font-medium">Randomize</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeMenuItem(item.id)}
+                            className="h-9 w-9 rounded-md border transition-all duration-200 shadow-efsoft flex items-center justify-center"
+                            style={{ backgroundColor: "rgba(230,126,128,0.14)", borderColor: "rgba(230,126,128,0.30)", color: "#E67E80" }}
+                            aria-label="Remove menu item"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] items-start">
