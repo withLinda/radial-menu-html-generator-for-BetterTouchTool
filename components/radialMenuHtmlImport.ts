@@ -1,5 +1,6 @@
 export type ImportedRadialMenuItem = {
   uuid: string;
+  name: string;
   iconClass: string;
   colorHex: string;
   source: {
@@ -27,6 +28,11 @@ const PRESET_CLASS_TO_HEX: Record<string, string> = {
   blue: "#7FBBB3",
 };
 
+type ParsedKeyedStringEntry = {
+  value: string;
+  comment: string;
+};
+
 function parseConstJsonArray(source: string, constName: string): string[] | null {
   const match = source.match(new RegExp(`\\bconst\\s+${constName}\\s*=\\s*(\\[[\\s\\S]*?\\])\\s*;`));
   if (!match) return null;
@@ -50,23 +56,35 @@ function unescapeJsStringLiteral(raw: string): string {
     .replace(/\\\\/g, "\\");
 }
 
-function parseConstKeyedObject(source: string, constName: string, keyPrefix: string): string[] | null {
+function normalizeLineComment(raw: string): string {
+  return raw.replace(/\r/g, "").replace(/\n/g, " ").trim();
+}
+
+function parseConstKeyedObjectEntries(source: string, constName: string, keyPrefix: string): ParsedKeyedStringEntry[] | null {
   const match = source.match(new RegExp(`\\bconst\\s+${constName}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*;`));
   if (!match) return null;
 
   const body = match[1];
-  const entryRe = new RegExp(`\\b${keyPrefix}(\\d+)\\s*:\\s*(['\"])([\\s\\S]*?)\\2`, "g");
-  const byIndex = new Map<number, string>();
+  const entryRe = new RegExp(`\\b${keyPrefix}(\\d+)\\s*:\\s*(['\"])([\\s\\S]*?)\\2\\s*,?\\s*(?://([^\\r\\n]*))?`, "g");
+  const byIndex = new Map<number, ParsedKeyedStringEntry>();
 
   for (const m of body.matchAll(entryRe)) {
     const index = Number(m[1]);
     if (!Number.isFinite(index) || index <= 0) continue;
-    byIndex.set(index, unescapeJsStringLiteral(m[3] ?? ""));
+    byIndex.set(index, {
+      value: unescapeJsStringLiteral(m[3] ?? ""),
+      comment: normalizeLineComment(m[4] ?? ""),
+    });
   }
 
   if (byIndex.size === 0) return null;
   const maxIndex = Math.max(...byIndex.keys());
-  return Array.from({ length: maxIndex }, (_, i) => byIndex.get(i + 1) ?? "");
+  return Array.from({ length: maxIndex }, (_, i) => byIndex.get(i + 1) ?? { value: "", comment: "" });
+}
+
+function parseConstKeyedObject(source: string, constName: string, keyPrefix: string): string[] | null {
+  const entries = parseConstKeyedObjectEntries(source, constName, keyPrefix);
+  return entries?.map((entry) => entry.value) ?? null;
 }
 
 function extractUuidFromHref(href: string): string {
@@ -109,7 +127,8 @@ export function parseRadialMenuHtml(html: string): ImportRadialMenuResult {
     };
   }
 
-  const uuidsArray = parseConstJsonArray(html, "UUIDS") ?? parseConstKeyedObject(html, "UUIDS", "UUID");
+  const uuidEntries = parseConstKeyedObjectEntries(html, "UUIDS", "UUID");
+  const uuidsArray = parseConstJsonArray(html, "UUIDS") ?? uuidEntries?.map((entry) => entry.value) ?? null;
   const iconsArray = parseConstJsonArray(html, "ICONS") ?? parseConstKeyedObject(html, "ICONS", "ICON");
   if (uuidsArray && uuidsArray.length !== anchors.length) warnings.push("UUIDS array length does not match number of menu items.");
   if (iconsArray && iconsArray.length !== anchors.length) warnings.push("ICONS array length does not match number of menu items.");
@@ -120,6 +139,7 @@ export function parseRadialMenuHtml(html: string): ImportRadialMenuResult {
     const href = a.getAttribute("href") ?? "";
     const uuidFromArray = uuidsArray?.[index] ?? "";
     const uuidFromHref = extractUuidFromHref(href);
+    const nameFromComment = uuidEntries?.[index]?.comment ?? "";
 
     const uuid = (uuidFromArray || uuidFromHref || "").trim();
     const uuidSource: ImportedRadialMenuItem["source"]["uuid"] = uuidFromArray
@@ -152,6 +172,7 @@ export function parseRadialMenuHtml(html: string): ImportRadialMenuResult {
 
     return {
       uuid,
+      name: nameFromComment,
       iconClass,
       colorHex,
       source: {

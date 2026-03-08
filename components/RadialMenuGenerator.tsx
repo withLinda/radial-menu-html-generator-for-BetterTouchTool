@@ -264,6 +264,13 @@ const RadialMenuGenerator = () => {
         .replace(/\r/g, "\\r")
         .replace(/\n/g, "\\n")}'`;
 
+    const sanitizeJsLineComment = (value: string) =>
+      value
+        .trim()
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n+/g, " ")
+        .replace(/<\/script/gi, "<\\/script");
+
     // unique custom colors (non-preset)
     const customColors = [...new Set(
       items
@@ -303,6 +310,7 @@ ${customColors
 
         return {
           uuid: item.uuid,
+          name: sanitizeJsLineComment(item.name),
           iconClass,
           colorClass: hasPresetColor ? colorClass : "",
           styleAttr,
@@ -318,7 +326,9 @@ ${customColors
       .join("\n");
 
     const uuidsObjectLiteral = `{
-${menuItemsForHtml.map((i, index) => `      UUID${index + 1}: ${jsSingleQuote(i.uuid)},`).join("\n")}
+${menuItemsForHtml
+  .map((i, index) => `      UUID${index + 1}: ${jsSingleQuote(i.uuid)},${i.name ? ` // ${i.name}` : ""}`)
+  .join("\n")}
     }`;
     const iconsObjectLiteral = `{
 ${menuItemsForHtml.map((i, index) => `      ICON${index + 1}: ${jsSingleQuote(i.iconClass)},`).join("\n")}
@@ -541,7 +551,7 @@ ${menuItemsHtml}
       return {
         id: Date.now() + index,
         uuid: imported.uuid,
-        name: "",
+        name: imported.name,
         iconType: iconIsPreset ? "preset" : "custom",
         icon: iconIsPreset ? imported.iconClass : randomFrom(COMMON_ICONS),
         customIcon: iconIsPreset ? "" : imported.iconClass,
@@ -576,7 +586,7 @@ ${menuItemsHtml}
       return {
         id: Date.now() + index,
         uuid: imported.uuid,
-        name: "",
+        name: imported.name,
         iconType: iconIsPreset ? "preset" : "custom",
         icon: iconIsPreset ? imported.iconClass : randomFrom(COMMON_ICONS),
         customIcon: iconIsPreset ? "" : imported.iconClass,
