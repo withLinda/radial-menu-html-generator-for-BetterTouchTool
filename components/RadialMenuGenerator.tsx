@@ -466,7 +466,7 @@ ${customColorStyles}
   <link rel="stylesheet" type="text/css" href="./circular.css" media="all">
   <script src="https://kit.fontawesome.com/f90668a2f5.js" crossorigin="anonymous"></script>
   <script>
-    window.onload = function() {
+    window.addEventListener('load', function() {
       document.querySelectorAll('.menu-item i').forEach((icon, index) => {
         const iconKey = 'ICON' + (index + 1);
         icon.className = ICONS[iconKey] || "";
@@ -478,21 +478,45 @@ ${customColorStyles}
         if (!uuid) return;
         link.href = 'btt://execute_assigned_actions_for_trigger/?uuid=' + uuid + '&closeFloatingHTMLMenu=1';
       });
-    };
+    });
+
+    function resizeWebviewSafely() {
+      const targetSize = { width: 500, height: 500 };
+
+      try {
+        if (typeof callBTT === "function") {
+          const maybePromise = callBTT('resize_webview', targetSize);
+          if (maybePromise && typeof maybePromise.catch === 'function') {
+            maybePromise.catch(() => {});
+          }
+          return;
+        }
+
+        if (typeof resize_webview === "function") {
+          const maybePromise = resize_webview(targetSize);
+          if (maybePromise && typeof maybePromise.catch === 'function') {
+            maybePromise.catch(() => {});
+          }
+        }
+      } catch (e) {}
+    }
 
     function BTTInitialize() {
-      setTimeout(async () => {
-        try {
-          if (typeof resize_webview === "function") {
-            await resize_webview({ width: 500, height: 500 });
-          }
-        } catch (e) {}
+      setTimeout(() => {
+        const menuOpenCheckbox = document.getElementById('menu-open');
+        if (menuOpenCheckbox) {
+          menuOpenCheckbox.checked = true;
+        }
 
-        document.getElementById("menu-open").checked = true;
+        // Run resize without awaiting so menu opening never depends on resize timing.
+        resizeWebviewSafely();
       }, 0);
     }
     function BTTWillCloseWindow() {
-      document.getElementById("menu-open").checked = false;
+      const menuOpenCheckbox = document.getElementById('menu-open');
+      if (menuOpenCheckbox) {
+        menuOpenCheckbox.checked = false;
+      }
     }
   </script>
 </head>
